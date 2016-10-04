@@ -216,6 +216,7 @@ namespace espressopp {
          void galileanTransf(Real3D _specCmVel);      // galilean transform by amount of _momPerPart
          
          /* COUPLING TO MD PARTICLES */
+         void updatePops();
          void coupleLBtoMD();                      //
          void calcRandForce(class Particle&);      // calc random force
          void calcViscForce(class Particle&);

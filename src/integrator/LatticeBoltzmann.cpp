@@ -111,6 +111,23 @@ namespace espressopp {
          /* initialise global weights and coefficients from the local ones */
          initLatticeModel();
          
+         /* set initial coupling forces */
+/*         Int3D _myNi = getMyNi();
+         if (doCoupling()==true) {
+            // set to zero coupling forces if the coupling exists
+            for (int i = 0; i < _myNi[0]; i++) {
+               for (int j = 0; j < _myNi[1]; j++) {
+                  for (int k = 0; k < _myNi[2]; k++) {
+                     (*lbfor)[i][j][k].setCouplForceLoc( Real3D(0.) );
+                  }
+               }
+            }
+            
+            calcDenMom();
+            
+            copyDenMomToHalo();
+         }
+*/
          // reset timers
          colstream.reset();
          comm.reset();
@@ -452,6 +469,7 @@ namespace espressopp {
          
          if (_coupling) {
             makeDecompose();
+            updatePops();
             coupleLBtoMD ();
          }
          
@@ -471,6 +489,48 @@ namespace espressopp {
             time_comm = 0.;
             time_sw = 0.;
          }
+      }
+      
+/*******************************************************************************************/
+
+      void LatticeBoltzmann::updatePops() {
+         int _offset = getHaloSkin();
+         bool _extForce = doExtForce();
+         bool _fluct = false;
+         bool _coupling = true;
+         Int3D _myNi = getMyNi();
+         
+         /*****************************************************/
+         copyForcesFromHalo();
+         
+         // make collision without fluctuations //
+         for (int i = _offset; i < _myNi[0]-_offset; i++) {
+            for (int j = _offset; j < _myNi[1]-_offset; j++) {
+               for (int k = _offset; k < _myNi[2]-_offset; k++) {
+                  Real3D _f = (*lbfor)[i][j][k].getExtForceLoc()
+                            + (*lbfor)[i][j][k].getCouplForceLoc();
+                  
+                  (*lbfluid)[i][j][k].collision(_fluct, _extForce,
+                                                _coupling, _f, gamma);
+               }
+            }
+         }
+
+         // set forces acting onto LB to zero
+         for (int i = 0; i < _myNi[0]; i++) {
+            for (int j = 0; j < _myNi[1]; j++) {
+               for (int k = 0; k < _myNi[2]; k++) {
+                  (*lbfor)[i][j][k].setCouplForceLoc( Real3D(0.) );
+               }
+            }
+         }
+         
+         // update hydrodynamics
+         calcDenMom();
+         
+         // push to the halo
+         copyDenMomToHalo();
+         /*****************************************************/
       }
       
 /*******************************************************************************************/
@@ -531,7 +591,7 @@ namespace espressopp {
                for (int k = _offset; k < _myNi[2]-_offset; k++) {
                   Real3D _f = (*lbfor)[i][j][k].getExtForceLoc()
                             + (*lbfor)[i][j][k].getCouplForceLoc();
-                  
+//                  Real3D _f = Real3D (0.);
                   (*lbfluid)[i][j][k].collision(_fluct, _extForce,
                                                 _coupling, _f, gamma);
                   streaming (i,j,k);
@@ -678,11 +738,12 @@ namespace espressopp {
                   _ip = bin[0] + _i; _jp = bin[1] + _j; _kp = bin[2] + _k;
 
                   // force acting onto the fluid node at the moment (midpoint scheme)
-                  Real3D _f = (*lbfor)[_ip][_jp][_kp].getExtForceLoc()
-                            + (*lbfor)[_ip][_jp][_kp].getCouplForceLoc();
-                  Real3D _jLoc = Real3D((*lbmom)[_ip][_jp][_kp].getMom_i(1)+_f[0],
-                                        (*lbmom)[_ip][_jp][_kp].getMom_i(2)+_f[1],
-                                        (*lbmom)[_ip][_jp][_kp].getMom_i(3)+_f[2] );
+//                  Real3D _f = (*lbfor)[_ip][_jp][_kp].getExtForceLoc()
+//                            + (*lbfor)[_ip][_jp][_kp].getCouplForceLoc();
+                  
+                  Real3D _jLoc = Real3D( (*lbmom)[_ip][_jp][_kp].getMom_i(1),
+                                         (*lbmom)[_ip][_jp][_kp].getMom_i(2),
+                                         (*lbmom)[_ip][_jp][_kp].getMom_i(3) );
                   real _invDenLoc = 1. / (*lbmom)[_ip][_jp][_kp].getMom_i(0);
 
                   Real3D _u = _jLoc * _invDenLoc * _convCoeff;
@@ -690,7 +751,7 @@ namespace espressopp {
                }
             }
          }
-         
+
          // add visc force to the buffered rand force acting onto particle p.id()
          addFOnPart(p.id(), -_fricCoeff * (p.velocity() - interpVel));
          
