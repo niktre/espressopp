@@ -591,7 +591,7 @@ namespace espressopp {
                for (int k = _offset; k < _myNi[2]-_offset; k++) {
                   Real3D _f = (*lbfor)[i][j][k].getExtForceLoc()
                             + (*lbfor)[i][j][k].getCouplForceLoc();
-//                  Real3D _f = Real3D (0.);
+
                   (*lbfluid)[i][j][k].collision(_fluct, _extForce,
                                                 _coupling, _f, gamma);
                   streaming (i,j,k);
@@ -737,10 +737,7 @@ namespace espressopp {
                   // assign iterations
                   _ip = bin[0] + _i; _jp = bin[1] + _j; _kp = bin[2] + _k;
 
-                  // force acting onto the fluid node at the moment (midpoint scheme)
-//                  Real3D _f = (*lbfor)[_ip][_jp][_kp].getExtForceLoc()
-//                            + (*lbfor)[_ip][_jp][_kp].getCouplForceLoc();
-                  
+                  // momentum change 
                   Real3D _jLoc = Real3D( (*lbmom)[_ip][_jp][_kp].getMom_i(1),
                                          (*lbmom)[_ip][_jp][_kp].getMom_i(2),
                                          (*lbmom)[_ip][_jp][_kp].getMom_i(3) );
