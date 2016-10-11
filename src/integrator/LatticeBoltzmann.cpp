@@ -623,11 +623,11 @@ namespace espressopp {
                   }
                }
             }
-            
-            calcDenMom();
-            
-            copyDenMomToHalo();
          }
+         
+         calcDenMom();
+         
+         copyDenMomToHalo();
       }
       
 /*******************************************************************************************/
@@ -737,7 +737,7 @@ namespace espressopp {
                   // assign iterations
                   _ip = bin[0] + _i; _jp = bin[1] + _j; _kp = bin[2] + _k;
 
-                  // momentum change 
+                  // momentum change
                   Real3D _jLoc = Real3D( (*lbmom)[_ip][_jp][_kp].getMom_i(1),
                                          (*lbmom)[_ip][_jp][_kp].getMom_i(2),
                                          (*lbmom)[_ip][_jp][_kp].getMom_i(3) );
@@ -2165,6 +2165,9 @@ namespace espressopp {
          .add_property("fricCoeff", &LatticeBoltzmann::getFricCoeff, &LatticeBoltzmann::setFricCoeff)
          .add_property("nSteps", &LatticeBoltzmann::getNSteps, &LatticeBoltzmann::setNSteps)
          .add_property("profStep", &LatticeBoltzmann::getProfStep, &LatticeBoltzmann::setProfStep)
+         .add_property("getMyNi", &LatticeBoltzmann::getMyNi)
+         .def("getLBMom", &LatticeBoltzmann::getLBMom)
+         .def("setLBMom", &LatticeBoltzmann::setLBMom)
          .def("saveLBConf", &LatticeBoltzmann::saveLBConf)
          .def("readLBConf", &LatticeBoltzmann::readLBConf)
          .def("keepLBDump", &LatticeBoltzmann::keepLBDump)
