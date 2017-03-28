@@ -137,6 +137,10 @@ namespace espressopp {
 
          void setHighTemp (real _highTemp);            // high temperature (lj)
          real getHighTemp ();
+ 
+         
+         void setChainLenMD (int _chainLenMD);                // get length of a chain
+         int getChainLenMD ();
          
          void setDoFluct (bool _fluct);     // flag for fluctuations
          bool doFluct ();
@@ -160,7 +164,7 @@ namespace espressopp {
 
          void setNSteps (int _nSteps);                // 1 LB step = N md ones
          int getNSteps ();
-
+         
          void setPrevDumpStep (int saveStep);             // interval for saving couplForces
          int getPrevDumpStep ();
 
