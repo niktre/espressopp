@@ -132,9 +132,12 @@ namespace espressopp {
          real getViscS ();
 
          // LB-temperature control //
-         void setLBTemp (real _lbTemp);            // temperature (lu)
+         void setLBTemp (real _lbTemp);            // temperature (lj)
          real getLBTemp ();
 
+         void setHighTemp (real _highTemp);            // high temperature (lj)
+         real getHighTemp ();
+         
          void setDoFluct (bool _fluct);     // flag for fluctuations
          bool doFluct ();
 
@@ -264,6 +267,10 @@ namespace espressopp {
          real lbTemp;                           // lb temperature (LJ-units)
          std::vector<real> phi;            // amplitudes of fluctuations
 
+         // JAN 2TLB
+         real highTemp;                           // lb temperature (LJ-units)
+         int chainLenMD;                          // MD-chain length
+         
          // GENERAL SYSTEM
          int start;
          int stepNum;                           // step number
