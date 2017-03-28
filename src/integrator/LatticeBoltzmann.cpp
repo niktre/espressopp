@@ -224,6 +224,12 @@ namespace espressopp {
       void LatticeBoltzmann::setLBTemp (real _lbTemp) { lbTemp = _lbTemp; initFluctuations();}
       real LatticeBoltzmann::getLBTemp () { return lbTemp;}
 
+      void LatticeBoltzmann::setHighTemp (real _highTemp) { highTemp = _highTemp;}
+      real LatticeBoltzmann::getHighTemp () { return highTemp;}
+      
+      void LatticeBoltzmann::setChainLenMD (int _chainLenMD) { chainLenMD = _chainLenMD;}
+      int LatticeBoltzmann::getChainLenMD () { return chainLenMD;}
+      
       void LatticeBoltzmann::setDoFluct (bool _fluct) {fluct = _fluct;}
       bool LatticeBoltzmann::doFluct () {return fluct;}
 
@@ -2120,6 +2126,8 @@ namespace espressopp {
          .add_property("gamma_odd", &LatticeBoltzmann::getGammaOdd, &LatticeBoltzmann::setGammaOdd)
          .add_property("gamma_even", &LatticeBoltzmann::getGammaEven, &LatticeBoltzmann::setGammaEven)
          .add_property("lbTemp", &LatticeBoltzmann::getLBTemp, &LatticeBoltzmann::setLBTemp)
+         .add_property("highTemp", &LatticeBoltzmann::getHighTemp, &LatticeBoltzmann::setHighTemp)
+         .add_property("chainlenMD", &LatticeBoltzmann::getChainLenMD, &LatticeBoltzmann::setChainLenMD)
          .add_property("fricCoeff", &LatticeBoltzmann::getFricCoeff, &LatticeBoltzmann::setFricCoeff)
          .add_property("nSteps", &LatticeBoltzmann::getNSteps, &LatticeBoltzmann::setNSteps)
          .add_property("profStep", &LatticeBoltzmann::getProfStep, &LatticeBoltzmann::setProfStep)
