@@ -636,8 +636,14 @@ namespace espressopp {
       void LatticeBoltzmann::calcRandForce (Particle& p) {
          real _fricCoeff = getFricCoeff();                  // coupling friction
          real _invdt = 1. / integrator->getTimeStep();      // MD timestep
-         real _tempLB = getLBTemp();
-
+         real _tempLB;
+         
+         // assignment of the low and high temperature for 2tlb
+         if ((p.id() / chainLenMD) % chainLenMD)
+             _tempLB = getLBTemp();
+         else
+             _tempLB = getHighTemp();
+         
          // noise amplitude and 3d uniform random number
          real prefactor = sqrt( 24. * _fricCoeff * _tempLB * _invdt );
          Real3D ranval( (*rng)() - .5, (*rng)() - .5, (*rng)() - .5 );
