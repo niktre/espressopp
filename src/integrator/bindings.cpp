@@ -33,6 +33,10 @@
 #include "BerendsenBarostat.hpp"
 #include "BerendsenBarostatAnisotropic.hpp"
 #include "BerendsenThermostat.hpp"
+#include "FastLB.hpp"
+#include "FastLBInit.hpp"
+#include "FastLBSite.hpp"
+#include "FastLBInitPopUniform.hpp"
 #include "Isokinetic.hpp"
 #include "StochasticVelocityRescaling.hpp"
 #include "LangevinThermostat.hpp"
@@ -73,6 +77,9 @@ namespace espressopp {
       BerendsenBarostatAnisotropic::registerPython();
       BerendsenThermostat::registerPython();
       LangevinBarostat::registerPython();
+      FastLB::registerPython();
+      FastLBInit::registerPython();
+      FastLBInitPopUniform::registerPython();
       Isokinetic::registerPython();
       StochasticVelocityRescaling::registerPython();
       TDforce::registerPython();
