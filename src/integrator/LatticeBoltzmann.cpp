@@ -2133,7 +2133,7 @@ namespace espressopp {
          .add_property("gamma_even", &LatticeBoltzmann::getGammaEven, &LatticeBoltzmann::setGammaEven)
          .add_property("lbTemp", &LatticeBoltzmann::getLBTemp, &LatticeBoltzmann::setLBTemp)
          .add_property("highTemp", &LatticeBoltzmann::getHighTemp, &LatticeBoltzmann::setHighTemp)
-         .add_property("chainlenMD", &LatticeBoltzmann::getChainLenMD, &LatticeBoltzmann::setChainLenMD)
+         .add_property("chainLenMD", &LatticeBoltzmann::getChainLenMD, &LatticeBoltzmann::setChainLenMD)
          .add_property("fricCoeff", &LatticeBoltzmann::getFricCoeff, &LatticeBoltzmann::setFricCoeff)
          .add_property("nSteps", &LatticeBoltzmann::getNSteps, &LatticeBoltzmann::setNSteps)
          .add_property("profStep", &LatticeBoltzmann::getProfStep, &LatticeBoltzmann::setProfStep)
