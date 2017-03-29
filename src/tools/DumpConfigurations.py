@@ -1,36 +1,29 @@
-#  Copyright (C) 2016
-#      Max Planck Institute for Polymer Research & JGU Mainz
 #  Copyright (C) 2012,2013
 #      Max Planck Institute for Polymer Research
 #  Copyright (C) 2008,2009,2010,2011
 #      Max-Planck-Institute for Polymer Research & Fraunhofer SCAI
-#
+#  
 #  This file is part of ESPResSo++.
-#
+#  
 #  ESPResSo++ is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
-#
+#  
 #  ESPResSo++ is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 
-"""
-*****************************************
-DumpConfigurations - read/write xyz files
-*****************************************
-"""
 
 import espressopp
+import numpy as np
 
 def writexyz(filename, system, velocities = True, unfolded = False, append = False):
-  """
-  """
+
   if append:
     file = open(filename,'a')
   else:
@@ -67,6 +60,48 @@ def writexyz(filename, system, velocities = True, unfolded = False, append = Fal
         pid   += 1
     else:
         pid   += 1
+  
+  file.close()
+
+
+def mywritexyz(filename, system, velocities = True, unfolded = False, append = False, mpc = 1):
+
+  if append:
+    file = open(filename,'a')
+  else:
+    file = open(filename,'w')
+  numParticles  = int(espressopp.analysis.NPart(system).compute())
+  box_x = system.bc.boxL[0]
+  box_y = system.bc.boxL[1]
+  box_z = system.bc.boxL[2]
+  st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
+  file.write(st)
+  maxParticleID = int(espressopp.analysis.MaxPID(system).compute())
+  pid   = 0
+  while pid <= maxParticleID:
+    if system.storage.particleExists(pid):
+        particle = system.storage.getParticle(pid)
+        if unfolded == False:
+          xpos   = particle.pos[0]
+          ypos   = particle.pos[1]
+          zpos   = particle.pos[2]
+        else:
+          unfoldedpos = system.bc.getUnfoldedPosition(particle.pos, particle.imageBox)
+          xpos   = unfoldedpos[0]
+          ypos   = unfoldedpos[1]
+          zpos   = unfoldedpos[2]
+        xvel   = particle.v[0]
+        yvel   = particle.v[1]
+        zvel   = particle.v[2]
+        type   = (pid / mpc) %2 #particle.type
+        if velocities:
+          st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, type, xpos, ypos, zpos, xvel, yvel, zvel)
+        else:
+          st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, type, xpos, ypos, zpos)
+        file.write(st)
+        pid   += 1
+    else:
+        pid   += 1
 
   file.close()
 
@@ -78,31 +113,29 @@ def fastwritexyz(filename, system, append = False):
     file = open(filename,'a')
   else:
     file = open(filename,'w')
-
+    
   configurations = espressopp.analysis.Configurations(system)
   configurations.gather()
   configuration = configurations[0]
-
+    
   numParticles  = configuration.size
   box_x = system.bc.boxL[0]
   box_y = system.bc.boxL[1]
   box_z = system.bc.boxL[2]
   st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
   file.write(st)
-
+  
   for pid in configuration:
     xpos   = configuration[pid][0]
     ypos   = configuration[pid][1]
     zpos   = configuration[pid][2]
     st = "%d %15.10f %15.10f %15.10f\n"%(pid, xpos, ypos, zpos)
     file.write(st)
-
+  
   file.close()
 """
 
 def readxyz(filename):
-  """
-  """
   file = open(filename)
   line = file.readline()
   num_particles = int(line.split()[0])
@@ -115,7 +148,7 @@ def readxyz(filename):
     Lx = float(line[0])
     Ly = float(line[4])
     Lz = float(line[8])
-
+    
   pid  = []
   type = []
   xpos = []
@@ -124,7 +157,7 @@ def readxyz(filename):
   xvel = []
   yvel = []
   zvel = []
-  for i in xrange(num_particles):
+  for i in range(num_particles):
     line = file.readline().split()
     if len(line) == 7 or len(line)==4:
       line.insert(1,'0')
@@ -147,9 +180,6 @@ def readxyz(filename):
 
 
 def readxyzr(filename):
-  """
-  """
-  
   file = open(filename)
   line = file.readline()
   num_particles = int(line.split()[0])
@@ -166,7 +196,7 @@ def readxyzr(filename):
   yvel = []
   zvel = []
   radius = []
-  for i in xrange(num_particles):
+  for i in range(num_particles):
     line = file.readline().split()
     if len(line) == 7:
       line.insert(1,'0')
@@ -195,11 +225,181 @@ def readxyzr(filename):
   return pid, type, xpos, ypos, zpos, xvel, yvel, zvel, Lx, Ly, Lz, radius
   file.close()
 
-# Livia's modified writexyz to fastwritexyz with velocities
+#my modified writexyz with velocities and type by pid
+def myfastwritexyz(filename, system, velocities = True, unfolded = True, append = False, mpc=1):
 
+  if append:
+    file = open(filename,'a')
+  else:
+    file = open(filename,'w')
+
+  configurations = espressopp.analysis.ConfigurationsExt(system)
+  configurations.unfolded = unfolded
+  configurations.gather()
+  configuration = configurations[0]
+
+  if velocities:
+    velocities = espressopp.analysis.Velocities(system)
+    velocities.gather()
+    velocity = velocities[0]
+
+  numParticles  = int(espressopp.analysis.NPart(system).compute())
+  box_x = system.bc.boxL[0]
+  box_y = system.bc.boxL[1]
+  box_z = system.bc.boxL[2]
+  st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
+  file.write(st)
+
+  for pid in configuration:
+        xpos   = configuration[pid][0]
+        ypos   = configuration[pid][1]
+        zpos   = configuration[pid][2]
+        if velocities:
+          xvel   = velocity[pid][0]
+          yvel   = velocity[pid][1]
+          zvel   = velocity[pid][2]
+          st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, (pid/mpc) %2 ,xpos, ypos, zpos, xvel, yvel, zvel)
+        else:
+          st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, (pid/mpc) %2, xpos, ypos, zpos)
+        file.write(st)
+        #pid   += 1
+
+  file.close()
+
+
+#my modified writexyz with velocities and type by pid
+def myfastwritexyzrandom(filename, system, velocities = True, unfolded = True, append = False, numpart=1, tpfname=''):
+
+  tps = np.zeros(numpart)
+  hotids = np.loadtxt(tpfname)
+  for hid in hotids:
+      tps[hid] = 1
+  if append:
+    file = open(filename,'a')
+  else:
+    file = open(filename,'w')
+
+  configurations = espressopp.analysis.ConfigurationsExt(system)
+  configurations.unfolded = unfolded
+  configurations.gather()
+  configuration = configurations[0]
+
+  if velocities:
+    velocities = espressopp.analysis.Velocities(system)
+    velocities.gather()
+    velocity = velocities[0]
+
+  numParticles  = int(espressopp.analysis.NPart(system).compute())
+  box_x = system.bc.boxL[0]
+  box_y = system.bc.boxL[1]
+  box_z = system.bc.boxL[2]
+  st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
+  file.write(st)
+
+  for pid in configuration:
+        xpos   = configuration[pid][0]
+        ypos   = configuration[pid][1]
+        zpos   = configuration[pid][2]
+        if velocities:
+          xvel   = velocity[pid][0]
+          yvel   = velocity[pid][1]
+          zvel   = velocity[pid][2]
+          st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, tps[pid] ,xpos, ypos, zpos, xvel, yvel, zvel)
+        else:
+          st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, tps[pid], xpos, ypos, zpos)
+        file.write(st)
+        #pid   += 1
+
+  file.close()
+
+
+#my modified writexyz with velocities and type by pid in chain between lowbound and uppbound
+def myfastwritexyzR(filename, system, velocities = True, unfolded = True, append = False, mpc=1, lowbound = 0, uppbound = 0):
+
+  if append:
+    file = open(filename,'a')
+  else:
+    file = open(filename,'w')
+
+  configurations = espressopp.analysis.ConfigurationsExt(system)
+  configurations.unfolded = unfolded
+  configurations.gather()
+  configuration = configurations[0]
+
+  if velocities:
+    velocities = espressopp.analysis.Velocities(system)
+    velocities.gather()
+    velocity = velocities[0]
+
+  numParticles  = int(espressopp.analysis.NPart(system).compute())
+  box_x = system.bc.boxL[0]
+  box_y = system.bc.boxL[1]
+  box_z = system.bc.boxL[2]
+  st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
+  file.write(st)
+
+  for pid in configuration:
+        xpos   = configuration[pid][0]
+        ypos   = configuration[pid][1]
+        zpos   = configuration[pid][2]
+        if (((pid % mpc)<lowbound) or ((pid % mpc)>=uppbound)):
+          tp = 0
+        else:
+          tp = 1
+        if velocities:
+          xvel   = velocity[pid][0]
+          yvel   = velocity[pid][1]
+          zvel   = velocity[pid][2]
+          st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, tp ,xpos, ypos, zpos, xvel, yvel, zvel)
+        else:
+          st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, tp, xpos, ypos, zpos)
+        file.write(st)
+        #pid   += 1
+
+  file.close()
+
+#my modified fastreadxyz with velocities and types #using numpy
+def myfastreadxyz(filename):
+  file = open(filename)
+  line = file.readline()
+  num_particles = int(line.split()[0])
+  line = file.readline().split()
+  if len(line) == 3:
+    Lx = float(line[0])
+    Ly = float(line[1])
+    Lz = float(line[2])
+  else:
+    Lx = float(line[0])
+    Ly = float(line[4])
+    Lz = float(line[8])
+
+  pid  = np.empty(num_particles)
+  type = np.empty(num_particles)
+  xpos = np.empty(num_particles)
+  ypos = np.empty(num_particles)
+  zpos = np.empty(num_particles)
+  xvel = np.empty(num_particles)
+  yvel = np.empty(num_particles)
+  zvel = np.empty(num_particles)
+
+  for i in range(num_particles):
+    line = file.readline().split()
+    if len(line) == 7:
+      line.insert(1,'0')
+    pid[i] = int(line[0])
+    type[i] = int(line[1])
+    xpos[i]=float(line[2])
+    ypos[i]=float(line[3])
+    zpos[i]=float(line[4])
+    xvel[i]=float(line[5])
+    yvel[i]=float(line[6])
+    zvel[i]=float(line[7])
+  return pid, type, xpos, ypos, zpos, xvel, yvel, zvel, Lx, Ly, Lz
+  file.close()
+
+
+# Livia's modified writexyz to fastwritexyz with velocities
 def fastwritexyz(filename, system, velocities = True, unfolded = True, append = False, scale=1.0):
-  """
-  """
 
   if append:
     file = open(filename,'a')
@@ -236,14 +436,10 @@ def fastwritexyz(filename, system, velocities = True, unfolded = True, append = 
           st = "%d %15.10f %15.10f %15.10f\n"%(pid, xpos, ypos, zpos)
         file.write(st)
         #pid   += 1
-
+  
   file.close()
-
 # Franziska's modified readxyz to fastreadxyz without velocities
 def fastreadxyz(filename):
-  """
-  """
-  
   file = open(filename)
   line = file.readline()
   num_particles = int(line.split()[0])
@@ -256,13 +452,13 @@ def fastreadxyz(filename):
     Lx = float(line[0])
     Ly = float(line[4])
     Lz = float(line[8])
-
+    
   pid  = []
   type = []
   xpos = []
   ypos = []
   zpos = []
-  for i in xrange(num_particles):
+  for i in range(num_particles):
     line = file.readline().split()
     if len(line) == 7 or len(line)==4:
       line.insert(1,'0')
@@ -271,30 +467,29 @@ def fastreadxyz(filename):
     xpos.append(float(line[2]))
     ypos.append(float(line[3]))
     zpos.append(float(line[4]))
-
   return pid, type, xpos, ypos, zpos, Lx, Ly, Lz
   file.close()
 
-def fastwritexyz_standard(filename, system, unfolded = False, append = False):
-  """
+'''
   Fast write standard xyz file. Generally standard xyz file is
-
-  >>>  number of particles
-  >>>  comment line
-  >>>  type x y z
-  >>>  ......
-  >>>  ......
-  >>>  ......
-
+  
+  >  number of particles
+  >  comment line
+  >  type x y z
+  >  ......
+  >  ......
+  >  ......
+  
   Additional information can be found here:
   Wiki:  http://en.wikipedia.org/wiki/XYZ_file_format
   OpenBabel: http://openbabel.org/wiki/XYZ_%28format%29
-
+  
   In this case one can choose folded or unfolded coordinates.
   Currently it writes only particle type = 0 and pid is a line number.
   Later different types should be implemented.
-  """
-  
+'''
+def fastwritexyz_standard(filename, system, unfolded = False, append = False):
+
   if append:
     file = open(filename,'a')
   else:
@@ -319,74 +514,63 @@ def fastwritexyz_standard(filename, system, unfolded = False, append = False):
     st = "%d %15.10f %15.10f %15.10f\n"%(0, xpos, ypos, zpos)
     file.write(st)
     pid   += 1
-
+  
   file.close()
 
 
+"""
+*********************************************
+**xyzfilewrite** - method to write a xyz file
+*********************************************
+
+This method creates a xyz file with the data from a specific system:
+1. row:         number of the atoms
+2. row:         REMARK generated by ESPResSo++
+following rows: atomsymbol positionX positionY positionZ (velocityX velocityY velocityZ) (charge)
+last row:       END
+
+The method needs the following parameters:
+
+* filename
+    name of the file where the table schould be saved in
+* system
+    ESPResSo system which creates the data e.g.:
+    >>>system, integrator = espressopp.standard_system.LennardJones(100,(10,10,10))
+* append
+    =False
+      the data in the file will be overwritten
+    =True
+      the data will be appended
+* atomtypes
+    the xyz file needs atom symbols, so it has to translate the numbers
+    insert a dictionary with the right translation
+* velocities
+    =False
+      does not save the velocity vectors
+    =True
+      creates collumns for the velocity vectors and saves the data
+* charge
+    =False
+      does not save the charge
+    =True
+      creates collumns for the charges and saves the data
+"""
 import espressopp
 from math import sqrt
 from espressopp import Real3D
 
 def xyzfilewrite(filename, system, append=False, atomtypes={0:'Fe',1:'O',2:'C'}, velocities=False, charge=False):
-  """
-
-  This method creates a xyz file with the data from a specific system:
-  1. row:         number of the atoms
-  2. row:         REMARK generated by ESPResSo++
-  following rows: atomsymbol positionX positionY positionZ (velocityX velocityY velocityZ) (charge)
-  last row:       END
-
-  The method needs the following parameters:
-
-  * filename
-  
-    name of the file where the table schould be saved in
-    
-  * system
-  
-    ESPResSo system which creates the data e.g.:
-    
-    >>> system, integrator = espressopp.standard_system.LennardJones(100,(10,10,10))
-    
-  * append
-  
-    =False
-      the data in the file will be overwritten
-      
-    =True
-      the data will be appended
-      
-  * atomtypes
-    the xyz file needs atom symbols, so it has to translate the numbers
-    insert a dictionary with the right translation
-    
-  * velocities
-  
-    =False
-      does not save the velocity vectors
-      
-    =True
-      creates collumns for the velocity vectors and saves the data
-      
-  * charge
-  
-    =False
-      does not save the charge
-      
-    =True
-      creates collumns for the charges and saves the data
-"""
   if append:
     file = open(filename, 'a')
-  else:
-    file = open(filename,'w')
+  else:    
+    file = open(filename,'w')  
   maxParticleID = int(espressopp.analysis.MaxPID(system).compute())
   pid = 0
   comment = "REMARK generated by ESPResSo++"
 
   st = "%d\n%s\n"%(maxParticleID, comment)
   file.write(st)
-
+  
   while pid <= maxParticleID:
     if system.storage.particleExists(pid):
       particle = system.storage.getParticle(pid)
@@ -415,7 +599,7 @@ def xyzfilewrite(filename, system, append=False, atomtypes={0:'Fe',1:'O',2:'C'},
           st = "%s %15.10f %15.10f %15.10f %15.10f\n"%(atom, xpos, ypos, zpos, q)
         else:
           st = "%s %15.10f %15.10f %15.10f\n"%(atom, xpos, ypos, zpos)
-
+      
       file.write(st)
       pid += 1
     else:
@@ -423,3 +607,4 @@ def xyzfilewrite(filename, system, append=False, atomtypes={0:'Fe',1:'O',2:'C'},
 
   file.write('END\n')
   file.close()
+
