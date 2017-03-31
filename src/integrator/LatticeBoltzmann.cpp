@@ -639,7 +639,7 @@ namespace espressopp {
          real _tempLB;
          
          // assignment of the low and high temperature for 2tlb
-         if ((p.id() / chainLenMD) % chainLenMD)
+         if (((p.id() / chainLenMD) % chainLenMD) % 2 == 0)
              _tempLB = getLBTemp();
          else
              _tempLB = getHighTemp();
