@@ -34,103 +34,48 @@ namespace espressopp {
 
   using namespace iterator;
   namespace integrator {
-    FastLBSite::FastLBSite () {
-            f   = std::vector<real>(FastLatticePar::getNumVelsLoc(), 0.);
-    }
 
 /*******************************************************************************************/
 
         /* SET AND GET PART */
-    void FastLBSite::setF_i (int _i, real _f) { f[_i] = _f;}
-    real FastLBSite::getF_i (int _i) { return f[_i];}
-
-    void FastLBSite::setPhiLoc (int _i, real _phi) { phiLoc[_i] = _phi;}
-    real FastLBSite::getPhiLoc (int _i) { return phiLoc[_i];}
-
-/*******************************************************************************************/
-
-    /* HELPFUL OPERATIONS WITH POPULATIONS AND MOMENTS */
-    void FastLBSite::scaleF_i (int _i, real _value) { f[_i] *= _value;}
+    void FastLBMom::setPhiLoc (int _i, real _phi) { phiLoc[_i] = _phi;}
+    real FastLBMom::getPhiLoc (int _i) { return phiLoc[_i];}
 
 /*******************************************************************************************/
 
     /* MANAGING STATIC VARIABLES */
     /* create storage for static variables */
-    std::vector<real> FastLBSite::phiLoc(19, 0.);
+    std::vector<real> FastLBMom::phiLoc(19, 0.);
 
 /*******************************************************************************************/
 
-        void FastLBSite::collision(bool _fluct, bool _extForce,
-                                                     bool _coupling, Real3D _force, std::vector<real> &_gamma) {
+        void FastLBMom::collision(bool _fluct, bool _extForce, 
+                                  bool _coupling, Real3D _force, 
+                                  std::vector<real> &_gamma) {
             real m[19];
 
-            calcLocalMoments(m);
+//            calcLocalMoments(m);
 
             relaxMoments(m, _extForce, _force, _gamma);
 
-            if (_fluct) thermalFluct(m);
+//            if (_fluct) thermalFluct(m);
 
             // coupling counts as an external force as well
-         if (_extForce) applyForces(m, _force, _gamma);
+//         if (_extForce) applyForces(m, _force, _gamma);
 
             btranMomToPop(m);
         }
 
 /*******************************************************************************************/
 
-        /* CALCULATION OF THE LOCAL MOMENTS */
-        void FastLBSite::calcLocalMoments (real *m) {
-            real f0,
-            f1p2, f1m2, f3p4, f3m4, f5p6, f5m6, f7p8, f7m8, f9p10, f9m10,
-            f11p12, f11m12, f13p14, f13m14, f15p16, f15m16, f17p18, f17m18;
-
-            /* shorthand functions for "simplified" notation */
-            f0     =  getF_i(0);
-            f1p2   =  getF_i(1) +  getF_i(2);    f1m2 =  getF_i(1) -  getF_i(2);
-            f3p4   =  getF_i(3) +  getF_i(4);    f3m4 =  getF_i(3) -  getF_i(4);
-            f5p6   =  getF_i(5) +  getF_i(6);    f5m6 =  getF_i(5) -  getF_i(6);
-            f7p8   =  getF_i(7) +  getF_i(8);    f7m8 =  getF_i(7) -  getF_i(8);
-            f9p10  =  getF_i(9) + getF_i(10);   f9m10 =  getF_i(9) - getF_i(10);
-            f11p12 = getF_i(11) + getF_i(12);  f11m12 = getF_i(11) - getF_i(12);
-            f13p14 = getF_i(13) + getF_i(14);  f13m14 = getF_i(13) - getF_i(14);
-            f15p16 = getF_i(15) + getF_i(16);  f15m16 = getF_i(15) - getF_i(16);
-            f17p18 = getF_i(17) + getF_i(18);  f17m18 = getF_i(17) - getF_i(18);
-
-            /* mass mode */
-            m[0] = f0 + f1p2 + f3p4 + f5p6 + f7p8 + f9p10 + f11p12 + f13p14 + f15p16 + f17p18;
-
-            /* momentum modes */
-            m[1] = f1m2 +   f7m8 +  f9m10 + f11m12 + f13m14;
-            m[2] = f3m4 +   f7m8 -  f9m10 + f15m16 + f17m18;
-            m[3] = f5m6 + f11m12 - f13m14 + f15m16 - f17m18;
-
-            /* stress modes */
-            m[4] = -f0 +   f7p8 + f9p10 + f11p12 + f13p14 + f15p16 + f17p18;
-            m[5] = 2.*f1p2 -   f3p4 -  f5p6 +   f7p8 +  f9p10 + f11p12 + f13p14 - 2.* (f15p16 + f17p18);
-            m[6] = f3p4 -   f5p6 +  f7p8 +  f9p10 - f11p12 - f13p14;
-            m[7] = f7p8 -  f9p10;
-            m[8] = f11p12 - f13p14;
-            m[9] = f15p16 - f17p18;
-
-            /* kinetic (ghost) modes */
-            m[10] = -2.* f1m2 +   f7m8 +  f9m10 + f11m12 + f13m14;
-            m[11] = -2.* f3m4 +   f7m8 -  f9m10 + f15m16 + f17m18;
-            m[12] = -2.* f5m6 + f11m12 - f13m14 + f15m16 - f17m18;
-            m[13] = f7m8 +  f9m10 - f11m12 - f13m14;
-            m[14] = -f7m8 +  f9m10 + f15m16 + f17m18;
-            m[15] = f11m12 - f13m14 - f15m16 + f17m18;
-            m[16] = f0 - 2.* (f1p2 + f3p4 + f5p6) +   f7p8 +  f9p10
-            + f11p12 + f13p14 + f15p16 + f17p18;
-            m[17] = -2.* f1p2 +   f3p4 +   f5p6 +   f7p8 +  f9p10 + f11p12
-            + f13p14 -    2.* (f15p16 + f17p18);
-            m[18] = -f3p4 +   f5p6 +   f7p8 +  f9p10 - f11p12 - f13p14;
-        }
-
-/*******************************************************************************************/
-
         /* RELAXATION OF THE MOMENTS TO THEIR EQUILIBRIUM VALUES */
-        void FastLBSite::relaxMoments (real *m, bool _extForce, Real3D _f, std::vector<real> &_gamma) {
+        void FastLBMom::relaxMoments (real *m, bool _extForce, Real3D _f, std::vector<real> &_gamma) {
             // moments on the site //
+            m[0] = getMom_i(0);
+            m[1] = getMom_i(1);
+            m[2] = getMom_i(2);
+            m[3] = getMom_i(3);
+            
             real _invTauLoc = 1. / FastLatticePar::getTauLoc();
             Real3D jLoc(m[1], m[2], m[3]);
             jLoc *= FastLatticePar::getALoc();
@@ -142,35 +87,25 @@ namespace espressopp {
             real _invRhoLoc = 1. / m[0];
             real pi_eq[6];
 
-            pi_eq[0] =  jLoc.sqr()*_invRhoLoc;
-            pi_eq[1] =  (jLoc[0]*jLoc[0] - jLoc[1]*jLoc[1])*_invRhoLoc;
-            pi_eq[2] =  (3.*jLoc[0]*jLoc[0] - jLoc.sqr())*_invRhoLoc;
-            pi_eq[3] =  jLoc[0]*jLoc[1]*_invRhoLoc;
-            pi_eq[4] =  jLoc[0]*jLoc[2]*_invRhoLoc;
-            pi_eq[5] =  jLoc[1]*jLoc[2]*_invRhoLoc;
-
             /* relax bulk mode */
-            m[4] = pi_eq[0] + _gamma[0] * (m[4] - pi_eq[0]);
-
+            m[4] =  jLoc.sqr()*_invRhoLoc;
+            
             /* relax shear modes */
-            m[5] = pi_eq[1] + _gamma[1] * (m[5] - pi_eq[1]);
-            m[6] = pi_eq[2] + _gamma[1] * (m[6] - pi_eq[2]);
-            m[7] = pi_eq[3] + _gamma[1] * (m[7] - pi_eq[3]);
-            m[8] = pi_eq[4] + _gamma[1] * (m[8] - pi_eq[4]);
-            m[9] = pi_eq[5] + _gamma[1] * (m[9] - pi_eq[5]);
-
-            /* relax odd modes */
-            m[10] *= _gamma[2]; m[11] *= _gamma[2]; 	m[12] *= _gamma[2];
-            m[13] *= _gamma[2]; m[14] *= _gamma[2]; 	m[15] *= _gamma[2];
-
-            /* relax even modes */
-            m[16] *= _gamma[3]; m[17] *= _gamma[3]; m[18] *= _gamma[3];
+            m[5] =  (jLoc[0]*jLoc[0] - jLoc[1]*jLoc[1])*_invRhoLoc;
+            m[6] =  (3.*jLoc[0]*jLoc[0] - jLoc.sqr())*_invRhoLoc;
+            m[7] =  jLoc[0]*jLoc[1]*_invRhoLoc;
+            m[8] =  jLoc[0]*jLoc[2]*_invRhoLoc;
+            m[9] =  jLoc[1]*jLoc[2]*_invRhoLoc;
+            
+            m[10] = 0.; m[11] = 0.; m[12] = 0.; 
+            m[13] = 0.; m[14] = 0.; m[15] = 0.; 
+            m[16] = 0.; m[17] = 0.; m[18] = 0.; 
         }
 
 /*******************************************************************************************/
 
         /* ADDING THERMAL FLUCTUATIONS */
-        void FastLBSite::thermalFluct (real *m) {
+        void FastLBMom::thermalFluct (real *m) {
             /* values of PhiLoc were already set in LatticeBoltzmann.cpp */
             int _numVelsLoc = FastLatticePar::getNumVelsLoc();
             real rootRhoLoc = sqrt(12.*m[0]); // factor 12. comes from usage of
@@ -186,7 +121,7 @@ namespace espressopp {
 
 /*******************************************************************************************/
 
-        void FastLBSite::applyForces (real *m, Real3D _f, std::vector<real> &_gamma) {
+        void FastLBMom::applyForces (real *m, Real3D _f, std::vector<real> &_gamma) {
             // set velocity _u
             Real3D _u = 0.5 * _f;
             _u[0] += m[1]; 	_u[1] += m[2]; _u[2] += m[3];
@@ -223,59 +158,61 @@ namespace espressopp {
 
 /*******************************************************************************************/
 
-        void FastLBSite::btranMomToPop (real *m) {
+        void FastLBMom::btranMomToPop (real *m) {
             int _numVelsLoc = FastLatticePar::getNumVelsLoc();
 
             // scale modes with inversed coefficients
             for (int i = 0; i < _numVelsLoc; i++) {
                 m[i] *= FastLatticePar::getInvBLoc(i);
             }
+            
+            real f[19];
+            
+            f[0] = m[0] -m[4] +m[16];
 
-            setF_i(0,m[0] -m[4] +m[16]);
-            setF_i(1,m[0] +m[1] + 2.* (m[5] -m[10] -m[16] -m[17]));
-            setF_i(2,m[0] -m[1] + 2.* (m[5] +m[10] -m[16] -m[17]));
-            setF_i(3,m[0] +m[2] -m[5] +m[6] - 2.* (m[11] +m[16]) +m[17] -m[18]);
-            setF_i(4,m[0] -m[2] -m[5] +m[6] + 2.* (m[11] -m[16]) +m[17] -m[18]);
-            setF_i(5,m[0] +m[3] -m[5] -m[6] - 2.* (m[12] +m[16]) +m[17] +m[18]);
-            setF_i(6,m[0] -m[3] -m[5] -m[6] + 2.* (m[12] -m[16]) +m[17] +m[18]);
+            f[1] = m[0] +m[1] + 2.* (m[5] -m[10] -m[16] -m[17]);
+            
+            f[2] = m[0] -m[1] + 2.* (m[5] +m[10] -m[16] -m[17]);
+            
+            f[3] = m[0] +m[2] -m[5] +m[6] - 2.* (m[11] +m[16]) +m[17] -m[18];
+            f[4] = m[0] -m[2] -m[5] +m[6] + 2.* (m[11] -m[16]) +m[17] -m[18];
+            f[5] = m[0] +m[3] -m[5] -m[6] - 2.* (m[12] +m[16]) +m[17] +m[18];
+            f[6] = m[0] -m[3] -m[5] -m[6] + 2.* (m[12] -m[16]) +m[17] +m[18];
 
-            setF_i(7,m[0] +m[1] +m[2] +m[4] +m[5] +m[6] +m[7] +m[10] +m[11]
-                         +m[13] -m[14] +m[16] +m[17] +m[18]);
-            setF_i(8,m[0] -m[1] -m[2] +m[4] +m[5] +m[6] +m[7] -m[10] -m[11]
-                         -m[13] +m[14] +m[16] +m[17] +m[18]);
-            setF_i(9,m[0] +m[1] -m[2] +m[4] +m[5] +m[6] -m[7] +m[10] -m[11]
-                         +m[13] +m[14] +m[16] +m[17] +m[18]);
-            setF_i(10,m[0] -m[1] +m[2] +m[4] +m[5] +m[6] -m[7] -m[10] +m[11]
-                         -m[13] -m[14] +m[16] +m[17] +m[18]);
+            f[7] = m[0] +m[1] +m[2] +m[4] +m[5] +m[6] +m[7] +m[10] +m[11]
+                         +m[13] -m[14] +m[16] +m[17] +m[18];
+            f[8] = m[0] -m[1] -m[2] +m[4] +m[5] +m[6] +m[7] -m[10] -m[11]
+                         -m[13] +m[14] +m[16] +m[17] +m[18];
+            f[9] = m[0] +m[1] -m[2] +m[4] +m[5] +m[6] -m[7] +m[10] -m[11]
+                         +m[13] +m[14] +m[16] +m[17] +m[18];
+            f[10] = m[0] -m[1] +m[2] +m[4] +m[5] +m[6] -m[7] -m[10] +m[11]
+                         -m[13] -m[14] +m[16] +m[17] +m[18];
 
-            setF_i(11,m[0] +m[1] +m[3] +m[4] +m[5] -m[6] +m[8] +m[10] +m[12]
-                         -m[13] +m[15] +m[16] +m[17] -m[18]);
-            setF_i(12,m[0] -m[1] -m[3] +m[4] +m[5] -m[6] +m[8] -m[10] -m[12]
-                         +m[13] -m[15] +m[16] +m[17] -m[18]);
-            setF_i(13,m[0] +m[1] -m[3] +m[4] +m[5] -m[6] -m[8] +m[10] -m[12]
-                         -m[13] -m[15] +m[16] +m[17] -m[18]);
-            setF_i(14,m[0] -m[1] +m[3] +m[4] +m[5] -m[6] -m[8] -m[10] +m[12]
-                         +m[13] +m[15] +m[16] +m[17] -m[18]);
+            f[11] = m[0] +m[1] +m[3] +m[4] +m[5] -m[6] +m[8] +m[10] +m[12]
+                         -m[13] +m[15] +m[16] +m[17] -m[18];
+            f[12] = m[0] -m[1] -m[3] +m[4] +m[5] -m[6] +m[8] -m[10] -m[12]
+                         +m[13] -m[15] +m[16] +m[17] -m[18];
+            f[13] = m[0] +m[1] -m[3] +m[4] +m[5] -m[6] -m[8] +m[10] -m[12]
+                         -m[13] -m[15] +m[16] +m[17] -m[18];
+            f[14] = m[0] -m[1] +m[3] +m[4] +m[5] -m[6] -m[8] -m[10] +m[12]
+                         +m[13] +m[15] +m[16] +m[17] -m[18];
 
-            setF_i(15,m[0] +m[2] +m[3] +m[4] - 2.*m[5] +m[9] +m[11] +m[12]
-                         +m[14] -m[15] +m[16] - 2.*m[17]);
-            setF_i(16,m[0] -m[2] -m[3] +m[4] - 2.*m[5] +m[9] -m[11] -m[12]
-                         -m[14] +m[15] +m[16] - 2.*m[17]);
-            setF_i(17,m[0] +m[2] -m[3] +m[4] - 2.*m[5] -m[9] +m[11] -m[12]
-                         +m[14] +m[15] +m[16] - 2.*m[17]);
-            setF_i(18,m[0] -m[2] +m[3] +m[4] - 2.*m[5] -m[9] -m[11] +m[12]
-                         -m[14] -m[15] +m[16] - 2.*m[17]);
+            f[15] = m[0] +m[2] +m[3] +m[4] - 2.*m[5] +m[9] +m[11] +m[12]
+                         +m[14] -m[15] +m[16] - 2.*m[17];
+            f[16] = m[0] -m[2] -m[3] +m[4] - 2.*m[5] +m[9] -m[11] -m[12]
+                         -m[14] +m[15] +m[16] - 2.*m[17];
+            f[17] = m[0] +m[2] -m[3] +m[4] - 2.*m[5] -m[9] +m[11] -m[12]
+                         +m[14] +m[15] +m[16] - 2.*m[17];
+            f[18] = m[0] -m[2] +m[3] +m[4] - 2.*m[5] -m[9] -m[11] +m[12]
+                         -m[14] -m[15] +m[16] - 2.*m[17];
 
             /* scale populations with weights */
             for (int i = 0; i < _numVelsLoc; i++) {
-                scaleF_i (i, FastLatticePar::getEqWeightLoc(i));
+                f[i] *= FastLatticePar::getEqWeightLoc(i);
             }
+            
+            
         }
-
-/*******************************************************************************************/
-
-    FastLBSite::~FastLBSite() {
-    }
 
 /*******************************************************************************************/
 

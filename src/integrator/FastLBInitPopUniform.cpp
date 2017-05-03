@@ -57,13 +57,16 @@ namespace espressopp {
                      scalp = _u0 * fastlb->getCi(l);
                      value = 0.5 * fastlb->getEqWeight(l) * _rho0 * (2. + 2. * scalp * invCs2 + scalp * scalp * invCs4 - trace);
                      fastlb->setPops( Int3D(i,j,k), l, value );
-                     fastlb->setGhostFluid( Int3D(i,j,k), l, 0.0 );
                   }
                   /* fill in den and j values for real and halo regions */
                   fastlb->setLBMom(Int3D(i,j,k), 0, _rho0);
                   fastlb->setLBMom(Int3D(i,j,k), 1, _u0[0] * _rho0);
                   fastlb->setLBMom(Int3D(i,j,k), 2, _u0[1] * _rho0);
                   fastlb->setLBMom(Int3D(i,j,k), 3, _u0[2] * _rho0);
+                  fastlb->setGhostMom( Int3D(i,j,k), 0, 0.0 );
+                  fastlb->setGhostMom( Int3D(i,j,k), 1, 0.0 );
+                  fastlb->setGhostMom( Int3D(i,j,k), 2, 0.0 );
+                  fastlb->setGhostMom( Int3D(i,j,k), 3, 0.0 );
                }
             }
          }

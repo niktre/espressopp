@@ -128,8 +128,7 @@ namespace espressopp {
          _recalc2.disconnect();
          _befIntV.disconnect();
 
-         delete (lbfluid);
-         delete (ghostlat);
+         delete (ghostmom);
          delete (lbmom);
          delete (lbfor);
       }
@@ -263,13 +262,8 @@ namespace espressopp {
       void FastLB::keepLBDump () { setPrevDumpStep(0);}
 
       /* Setter and getter for access to population values */
-      void FastLB::setPops (Int3D _Ni, int _l, real _value) {
-         (*lbfluid)[_Ni[0]][_Ni[1]][_Ni[2]].setF_i(_l, _value);   }
-      real FastLB::getPops (Int3D _Ni, int _l) {
-         return (*lbfluid)[_Ni[0]][_Ni[1]][_Ni[2]].getF_i(_l);   }
-
-      void FastLB::setGhostFluid (Int3D _Ni, int _l, real _value) {
-         (*ghostlat)[_Ni[0]][_Ni[1]][_Ni[2]].setF_i(_l, _value);   }
+//      void FastLB::setGhostMom (Int3D _Ni, int _l, real _value) {
+//         (*ghostmom)[_Ni[0]][_Ni[1]][_Ni[2]].setF_i(_l, _value);   }
 
       void FastLB::setLBMom (Int3D _Ni, int _l, real _value) {
          (*lbmom)[_Ni[0]][_Ni[1]][_Ni[2]].setMom_i(_l, _value);   }
@@ -305,24 +299,20 @@ namespace espressopp {
          Int3D _numSites = getMyNi();
 
          /* stretch lattices resizing them in 3 dimensions */
-         lbfluid = new fastlblattice;
-         ghostlat = new fastlblattice;
+         ghostmom = new fastlbmoments;
          lbmom = new fastlbmoments;
          lbfor = new fastlbforces;
 
-         (*lbfluid).resize(_numSites[0]);
-         (*ghostlat).resize(_numSites[0]);
+         (*ghostmom).resize(_numSites[0]);
          (*lbmom).resize(_numSites[0]);
          (*lbfor).resize(_numSites[0]);
 
          for (int i = 0; i < _numSites[0]; i++) {
-            (*lbfluid)[i].resize(_numSites[1]);
-            (*ghostlat)[i].resize(_numSites[1]);
+            (*ghostmom)[i].resize(_numSites[1]);
             (*lbmom)[i].resize(_numSites[1]);
             (*lbfor)[i].resize(_numSites[1]);
             for (int j = 0; j < _numSites[1]; j++) {
-               (*lbfluid)[i][j].resize(_numSites[2]);
-               (*ghostlat)[i][j].resize(_numSites[2]);
+               (*ghostmom)[i][j].resize(_numSites[2]);
                (*lbmom)[i][j].resize(_numSites[2]);
                (*lbfor)[i][j].resize(_numSites[2]);
             }
@@ -429,7 +419,7 @@ namespace espressopp {
                for (int j = 0; j < _Ni[1]; j++) {
                   for (int k = 0; k < _Ni[2]; k++) {
                      for (int l = 0; l < getNumVels(); l++) {
-                        (*lbfluid)[i][j][k].setPhiLoc(l,getPhi(l));
+                        (*lbmom)[i][j][k].setPhiLoc(l,getPhi(l));/////////////////!!!!!!!!!!!!!!!!!!!!1
                      }
                   }
                }
@@ -534,9 +524,9 @@ namespace espressopp {
                   Real3D _f = (*lbfor)[i][j][k].getExtForceLoc()
                             + (*lbfor)[i][j][k].getCouplForceLoc();
 
-                  (*lbfluid)[i][j][k].collision(_fluct, _extForce,
+                  (*lbmom)[i][j][k].collision(_fluct, _extForce,
                                                 _coupling, _f, gamma);
-                  streaming (i,j,k);
+//                  streaming (i,j,k);
                }
             }
          }
@@ -544,14 +534,14 @@ namespace espressopp {
 
          // halo communication //
          timer = comm.getElapsedTime();
-         commHalo();
+//         commHalo();
          time_comm += ( comm.getElapsedTime() - timer );
 
          /* swapping of the pointers to the lattices */
          timer = swapping.getElapsedTime();
-         fastlblattice *tmp = lbfluid;
-         lbfluid = ghostlat;
-         ghostlat = tmp;
+         fastlbmoments *tmp = lbmom;
+         lbmom = ghostmom;
+         ghostmom = tmp;
          time_sw += ( swapping.getElapsedTime() - timer );
 
          //#note: should one cancel this condition if pure lb is in use?
@@ -567,7 +557,7 @@ namespace espressopp {
             }
          }
 
-         calcDenMom();
+//         calcDenMom();
 
          copyDenMomToHalo();
       }
@@ -584,30 +574,30 @@ namespace espressopp {
          int _kp = _k + 1; int _km = _k - 1;
 
          // do not move the staying populations
-         (*ghostlat)[_i][_j][_k].setF_i(0,(*lbfluid)[_i][_j][_k].getF_i(0));
+ /*        (*ghostmom)[_i][_j][_k].setF_i(0,(*lbfluid)[_i][_j][_k].getF_i(0));
 
          // move populations to the nearest neighbors
-         (*ghostlat)[_ip][_j][_k].setF_i(1,(*lbfluid)[_i][_j][_k].getF_i(1));
-         (*ghostlat)[_im][_j][_k].setF_i(2,(*lbfluid)[_i][_j][_k].getF_i(2));
-         (*ghostlat)[_i][_jp][_k].setF_i(3,(*lbfluid)[_i][_j][_k].getF_i(3));
-         (*ghostlat)[_i][_jm][_k].setF_i(4,(*lbfluid)[_i][_j][_k].getF_i(4));
-         (*ghostlat)[_i][_j][_kp].setF_i(5,(*lbfluid)[_i][_j][_k].getF_i(5));
-         (*ghostlat)[_i][_j][_km].setF_i(6,(*lbfluid)[_i][_j][_k].getF_i(6));
+         (*ghostmom)[_ip][_j][_k].setF_i(1,(*lbfluid)[_i][_j][_k].getF_i(1));
+         (*ghostmom)[_im][_j][_k].setF_i(2,(*lbfluid)[_i][_j][_k].getF_i(2));
+         (*ghostmom)[_i][_jp][_k].setF_i(3,(*lbfluid)[_i][_j][_k].getF_i(3));
+         (*ghostmom)[_i][_jm][_k].setF_i(4,(*lbfluid)[_i][_j][_k].getF_i(4));
+         (*ghostmom)[_i][_j][_kp].setF_i(5,(*lbfluid)[_i][_j][_k].getF_i(5));
+         (*ghostmom)[_i][_j][_km].setF_i(6,(*lbfluid)[_i][_j][_k].getF_i(6));
 
          // move populations to the next-to-the-nearest neighbors
-         (*ghostlat)[_ip][_jp][_k].setF_i(7,(*lbfluid)[_i][_j][_k].getF_i(7));
-         (*ghostlat)[_im][_jm][_k].setF_i(8,(*lbfluid)[_i][_j][_k].getF_i(8));
-         (*ghostlat)[_ip][_jm][_k].setF_i(9,(*lbfluid)[_i][_j][_k].getF_i(9));
-         (*ghostlat)[_im][_jp][_k].setF_i(10,(*lbfluid)[_i][_j][_k].getF_i(10));
-         (*ghostlat)[_ip][_j][_kp].setF_i(11,(*lbfluid)[_i][_j][_k].getF_i(11));
-         (*ghostlat)[_im][_j][_km].setF_i(12,(*lbfluid)[_i][_j][_k].getF_i(12));
-         (*ghostlat)[_ip][_j][_km].setF_i(13,(*lbfluid)[_i][_j][_k].getF_i(13));
-         (*ghostlat)[_im][_j][_kp].setF_i(14,(*lbfluid)[_i][_j][_k].getF_i(14));
-         (*ghostlat)[_i][_jp][_kp].setF_i(15,(*lbfluid)[_i][_j][_k].getF_i(15));
-         (*ghostlat)[_i][_jm][_km].setF_i(16,(*lbfluid)[_i][_j][_k].getF_i(16));
-         (*ghostlat)[_i][_jp][_km].setF_i(17,(*lbfluid)[_i][_j][_k].getF_i(17));
-         (*ghostlat)[_i][_jm][_kp].setF_i(18,(*lbfluid)[_i][_j][_k].getF_i(18));
-      }
+         (*ghostmom)[_ip][_jp][_k].setF_i(7,(*lbfluid)[_i][_j][_k].getF_i(7));
+         (*ghostmom)[_im][_jm][_k].setF_i(8,(*lbfluid)[_i][_j][_k].getF_i(8));
+         (*ghostmom)[_ip][_jm][_k].setF_i(9,(*lbfluid)[_i][_j][_k].getF_i(9));
+         (*ghostmom)[_im][_jp][_k].setF_i(10,(*lbfluid)[_i][_j][_k].getF_i(10));
+         (*ghostmom)[_ip][_j][_kp].setF_i(11,(*lbfluid)[_i][_j][_k].getF_i(11));
+         (*ghostmom)[_im][_j][_km].setF_i(12,(*lbfluid)[_i][_j][_k].getF_i(12));
+         (*ghostmom)[_ip][_j][_km].setF_i(13,(*lbfluid)[_i][_j][_k].getF_i(13));
+         (*ghostmom)[_im][_j][_kp].setF_i(14,(*lbfluid)[_i][_j][_k].getF_i(14));
+         (*ghostmom)[_i][_jp][_kp].setF_i(15,(*lbfluid)[_i][_j][_k].getF_i(15));
+         (*ghostmom)[_i][_jm][_km].setF_i(16,(*lbfluid)[_i][_j][_k].getF_i(16));
+         (*ghostmom)[_i][_jp][_km].setF_i(17,(*lbfluid)[_i][_j][_k].getF_i(17));
+         (*ghostmom)[_i][_jm][_kp].setF_i(18,(*lbfluid)[_i][_j][_k].getF_i(18));
+ */     }
 
 /*******************************************************************************************/
 
@@ -734,15 +724,16 @@ namespace espressopp {
                for (int k = _offset; k<_myNi[2]-_offset; ++k) {
                   real denLoc = 0.;
                   Real3D jLoc = Real3D(0.);
-                  for (int l = 0; l < _numVels; l++) {
+/*                  for (int l = 0; l < _numVels; l++) {
                      denLoc += (*lbfluid)[i][j][k].getF_i(l);
                      jLoc += (*lbfluid)[i][j][k].getF_i(l)*getCi(l);
                   }
-                  (*lbmom)[i][j][k].setMom_i(0,denLoc);
-                  (*lbmom)[i][j][k].setMom_i(1,jLoc[0]);
-                  (*lbmom)[i][j][k].setMom_i(2,jLoc[1]);
-                  (*lbmom)[i][j][k].setMom_i(3,jLoc[2]);
-               }
+
+                  (*lbmom)[i][j][k].getMom_i(0);
+                  (*lbmom)[i][j][k].getMom_i(1,jLoc[0]);
+                  (*lbmom)[i][j][k].getMom_i(2,jLoc[1]);
+                  (*lbmom)[i][j][k].getMom_i(3,jLoc[2]);
+*/               }
             }
          }
       }
@@ -1237,304 +1228,6 @@ namespace espressopp {
          }
 
          return _globIdx;
-      }
-
-/*******************************************************************************************/
-
-      /* COMMUNICATE POPULATIONS IN HALO REGIONS TO THE NEIGHBOURING CPUs */
-      void FastLB::commHalo() {
-         int i, j, k, idx;             // running indices
-         int const numPopTransf = 5;	// num of popul and hydro moms to be sent
-         int rnode, snode;             // CPU ranks to receive from and to send to
-         std::vector<real> bufToSend, bufToRecv;
-
-         int _offset = getHaloSkin();
-         Int3D _myNi = getMyNi();
-         Int3D _myPos = getMyPos();
-
-         mpi::communicator world;
-
-         //////////////////////
-         //// X-direction /////
-         //////////////////////
-         int numDataTransf = numPopTransf * _myNi[1] * _myNi[2];
-         bufToSend.resize( numDataTransf );
-         bufToRecv.resize( numDataTransf );
-
-         /* send to right, recv from left i = 1, 7, 9, 11, 13 */
-         snode = getMyNeigh(1);
-         rnode = getMyNeigh(0);
-
-         // prepare message for sending
-         i = _myNi[0] - _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (j=0; j<_myNi[1]; j++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(1);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(7);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(9);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(11);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(13);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in x-dir is 1
-         if (getNodeGrid().getItem(0) > 1) {
-            if (_myPos[0] % 2 == 0) {
-               world.send(snode, COMM_DIR_0, bufToSend);
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-               world.send(snode, COMM_DIR_0, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         i = _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (j=0; j<_myNi[1]; j++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(1, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(7, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(9, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(11, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(13, bufToRecv[idx+4]);
-            }
-         }
-
-         /* send to left, recv from right i = 2, 8, 10, 12, 14 */
-         snode = getMyNeigh(0);
-         rnode = getMyNeigh(1);
-
-         // prepare message for sending
-         i = 0;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (j=0; j<_myNi[1]; j++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(2);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(8);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(10);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(12);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(14);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in x-dir is 1
-         if (getNodeGrid().getItem(0) > 1) {
-            if (_myPos[0] % 2 == 0) {
-               world.send(snode, COMM_DIR_1, bufToSend);
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-               world.send(snode, COMM_DIR_1, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         i = _myNi[0] - 2 * _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (j=0; j<_myNi[1]; j++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(2, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(8, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(10, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(12, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(14, bufToRecv[idx+4]);
-            }
-         }
-
-         //////////////////////
-         //// Y-direction /////
-         //////////////////////
-         numDataTransf = numPopTransf * _myNi[0] * _myNi[2];
-         bufToSend.resize(numDataTransf);				// resize bufToSend
-         bufToRecv.resize(numDataTransf);				// resize bufToRecv
-
-         /* send to right, recv from left i = 3, 7, 10, 15, 17 */
-         snode = getMyNeigh(3);
-         rnode = getMyNeigh(2);
-
-         // prepare message for sending
-         j = _myNi[1] - _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(3);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(7);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(10);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(15);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(17);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in y-dir is 1
-         if (getNodeGrid().getItem(1) > 1) {
-            if (_myPos[1] % 2 == 0) {
-               world.send(snode, COMM_DIR_0, bufToSend);
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-               world.send(snode, COMM_DIR_0, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         j = _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(3, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(7, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(10, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(15, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(17, bufToRecv[idx+4]);
-            }
-         }
-
-         /* send to left, recv from right i = 4, 8, 9, 16, 18 */
-         snode = getMyNeigh(2);
-         rnode = getMyNeigh(3);
-
-         // prepare message for sending
-         j = 0;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(4);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(8);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(9);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(16);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(18);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in y-dir is 1
-         if (getNodeGrid().getItem(1) > 1) {
-            if (_myPos[1] % 2 == 0) {
-               world.send(snode, COMM_DIR_1, bufToSend);
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-               world.send(snode, COMM_DIR_1, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         j = _myNi[1] - 2 * _offset;
-         idx = 0;
-         for (k=0; k<_myNi[2]; k++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(4, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(8, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(9, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(16, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(18, bufToRecv[idx+4]);
-            }
-         }
-
-         //////////////////////
-         //// Z-direction /////
-         //////////////////////
-         numDataTransf = numPopTransf * _myNi[0] * _myNi[1];
-         bufToSend.resize(numDataTransf);				// resize bufToSend
-         bufToRecv.resize(numDataTransf);				// resize bufToRecv
-
-         /* send to right, recv from left i = 5, 11, 14, 15, 18 */
-         snode = getMyNeigh(5);
-         rnode = getMyNeigh(4);
-
-         // prepare message for sending
-         k = _myNi[2] - _offset;
-         idx = 0;
-         for (j=0; j<_myNi[1]; j++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(5);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(11);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(14);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(15);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(18);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in z-dir is 1
-         if (getNodeGrid().getItem(2) > 1) {
-            if (_myPos[2] % 2 == 0) {
-               world.send(snode, COMM_DIR_0, bufToSend);
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_0, bufToRecv);
-               world.send(snode, COMM_DIR_0, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         k = _offset;
-         idx = 0;
-         for (j=0; j<_myNi[1]; j++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(5, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(11, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(14, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(15, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(18, bufToRecv[idx+4]);
-            }
-         }
-
-         /* send to left, recv from right i = 6, 12, 13, 16, 17 */
-         snode = getMyNeigh(4);
-         rnode = getMyNeigh(5);
-
-         // prepare message for sending
-         k = 0;
-         idx = 0;
-         for (j=0; j<_myNi[1]; j++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               bufToSend[idx] = (*ghostlat)[i][j][k].getF_i(6);
-               bufToSend[idx+1] = (*ghostlat)[i][j][k].getF_i(12);
-               bufToSend[idx+2] = (*ghostlat)[i][j][k].getF_i(13);
-               bufToSend[idx+3] = (*ghostlat)[i][j][k].getF_i(16);
-               bufToSend[idx+4] = (*ghostlat)[i][j][k].getF_i(17);
-            }
-         }
-
-         // send and receive data or use memcpy if number of CPU in z-dir is 1
-         if (getNodeGrid().getItem(2) > 1) {
-            if (_myPos[2] % 2 == 0) {
-               world.send(snode, COMM_DIR_1, bufToSend);
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-            } else {
-               world.recv(rnode, COMM_DIR_1, bufToRecv);
-               world.send(snode, COMM_DIR_1, bufToSend);
-            }
-         } else {
-            bufToRecv = bufToSend;
-         }
-
-         // unpack message
-         k = _myNi[2] - 2 * _offset;
-         idx = 0;
-         for (j=0; j<_myNi[1]; j++) {
-            for (i=0; i<_myNi[0]; i++, idx += numPopTransf) {
-               (*ghostlat)[i][j][k].setF_i(6, bufToRecv[idx]);
-               (*ghostlat)[i][j][k].setF_i(12, bufToRecv[idx+1]);
-               (*ghostlat)[i][j][k].setF_i(13, bufToRecv[idx+2]);
-               (*ghostlat)[i][j][k].setF_i(16, bufToRecv[idx+3]);
-               (*ghostlat)[i][j][k].setF_i(17, bufToRecv[idx+4]);
-            }
-         }
-
-         // release buffers
-         bufToSend.resize(0); bufToRecv.resize(0);
       }
 
 /*******************************************************************************************/

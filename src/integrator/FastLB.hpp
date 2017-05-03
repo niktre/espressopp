@@ -32,7 +32,6 @@
 #include "Int3D.hpp"
 #include "FastLBSite.hpp"
 
-typedef std::vector< std::vector< std::vector<espressopp::integrator::FastLBSite> > > fastlblattice;
 typedef std::vector< std::vector< std::vector<espressopp::integrator::FastLBMom> > > fastlbmoments;
 typedef std::vector< std::vector< std::vector<espressopp::integrator::FastLBForce> > > fastlbforces;
 
@@ -174,7 +173,7 @@ namespace espressopp {
          void setPops (Int3D _Ni, int _l, real _value);
          real getPops (Int3D _Ni, int _l);
 
-         void setGhostFluid (Int3D _Ni, int _l, real _value);
+         void setGhostMom (Int3D _Ni, int _l, real _value);
 
          void setLBMom (Int3D _Ni, int _l, real _value);
          real getLBMom (Int3D _Ni, int _l);
@@ -275,9 +274,9 @@ namespace espressopp {
          bool extForce;                         // flag for an external force
 
          // LATTICES
-         fastlblattice *lbfluid;
-         fastlblattice *ghostlat;
-         fastlbmoments *lbmom;
+         // lbfluid
+         // ghostlat
+         fastlbmoments *lbmom, *ghostmom;
          fastlbforces *lbfor;
 
          // COUPLING

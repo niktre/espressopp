@@ -28,56 +28,6 @@
 
 namespace espressopp {
    namespace integrator {
-      class FastLBSite {
-         /**
-          * \brief Description of the properties of the FastLBSite class
-          *
-          * This is a FastLBSite class for storing of the populations, ext and coupling forces on the lattice site. Through its methods this class handles everything that happens on the node during collision. It also sets the values to the D3Q19 model-related parameters on EVERY lattice site.
-          *
-          * The normal lattice and its ghost counterpart are based on this FastLBSite class. They are defined in LatticeBoltzmann.*pp files.
-          *
-          * Please note that by default ESPResSo++ supports only D3Q19 lattice model.
-          * However, you can code other lattice models, it should not be difficult.
-          */
-      public:
-         FastLBSite ();
-         ~FastLBSite ();
-
-         /* SET AND GET DECLARATION */
-         void setF_i (int _i, real _f);									// set f_i population to _f
-         real getF_i (int _i);												// get f_i population
-
-         void setPhiLoc (int _i, real _phi);							// set phi value to _phi
-         real getPhiLoc (int _i);											// get phi value
-
-         /* HELPFUL OPERATIONS WITH POPULATIONS AND MOMENTS */
-         void scaleF_i (int _i, real _value);                  // scale population i by _value
-
-         /* FUNCTIONS DECLARATION */
-         void collision (bool _fluct, bool _extForce,
-                         bool _coupling, Real3D _f,
-                         std::vector<real> &_gamma);		  // perform collision step
-
-         void calcLocalMoments (real *m);								// calculate local moments
-
-         void relaxMoments (real *m, bool _extForce,
-                            Real3D _f,
-                            std::vector<real> &_gamma);		// relax local moms to eq moms
-
-         void thermalFluct (real *m);										// apply thermal fluctuations
-
-         void applyForces (real *m, Real3D _f,
-                           std::vector<real> &_gamma);		// apply ext and coupl forces
-
-         void btranMomToPop (real *m);										// back-transform moms to pops
-
-      private:
-         std::vector<real> f;														// populations on a site
-         static std::vector<real> phiLoc;								// local fluct amplitudes
-      };
-
-      /*******************************************************************************************/
-
       class FastLBMom {
          /**
           * \brief Description of the properties of the LBMom class
@@ -92,8 +42,30 @@ namespace espressopp {
          void setMom_i (int _i, real _mom);							// set f_i population to _f
          real getMom_i (int _i);													// get f_i population
 
+         void setPhiLoc (int _i, real _phi);							// set phi value to _phi
+         real getPhiLoc (int _i);											// get phi value
+
+         /* FUNCTIONS DECLARATION */
+         void collision (bool _fluct, bool _extForce,
+                         bool _coupling, Real3D _f,
+                         std::vector<real> &_gamma);		  // perform collision step
+
+//         void calcLocalMoments (real *m);								// calculate local moments
+
+         void relaxMoments (real *m, bool _extForce,
+                            Real3D _f,
+                            std::vector<real> &_gamma);		// relax local moms to eq moms
+
+         void thermalFluct (real *m);										// apply thermal fluctuations
+
+         void applyForces (real *m, Real3D _f,
+                           std::vector<real> &_gamma);		// apply ext and coupl forces
+
+         void btranMomToPop (real *m);										// back-transform moms to pops
+
       private:
          std::vector<real> mom;													// pops on the ghost lattice
+         static std::vector<real> phiLoc;								// local fluct amplitudes
       };
 
       /*******************************************************************************************/
