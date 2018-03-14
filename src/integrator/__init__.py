@@ -32,6 +32,7 @@ from espressopp.integrator.FreeEnergyCompensation import *
 from espressopp.integrator.OnTheFlyFEC import *
 
 from espressopp.integrator.Extension import *
+from espressopp.integrator.Activity import *
 from espressopp.integrator.Adress import *
 from espressopp.integrator.BerendsenBarostat import *
 from espressopp.integrator.BerendsenBarostatAnisotropic import *

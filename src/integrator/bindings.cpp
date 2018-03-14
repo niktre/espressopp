@@ -29,6 +29,7 @@
 #include "TDforce.hpp"
 #include "FreeEnergyCompensation.hpp"
 #include "OnTheFlyFEC.hpp"
+#include "Activity.hpp"
 #include "Adress.hpp"
 #include "BerendsenBarostat.hpp"
 #include "BerendsenBarostatAnisotropic.hpp"
@@ -69,6 +70,7 @@ namespace espressopp {
       VelocityVerlet::registerPython();
       VelocityVerletOnGroup::registerPython();
       Extension::registerPython();
+      Activity::registerPython();
       Adress::registerPython();
       BerendsenBarostat::registerPython();
       BerendsenBarostatAnisotropic::registerPython();
