@@ -142,6 +142,9 @@ namespace espressopp {
          void setChainLenMD (int _chainLenMD);                // get length of a chain
          int getChainLenMD ();
          
+         void setColdHotRatio (int _cold, int _hot);      // two numbers for ratio of hot and cold chain
+         int getColdHotRatio (int _coldorhot);
+         
          void setDoFluct (bool _fluct);     // flag for fluctuations
          bool doFluct ();
 
@@ -271,9 +274,10 @@ namespace espressopp {
          real lbTemp;                           // lb temperature (LJ-units)
          std::vector<real> phi;            // amplitudes of fluctuations
 
-         // JAN 2TLB
+         // JAN 2TLB / ACTIVE DROPLETS
          real highTemp;                           // lb temperature (LJ-units)
          int chainLenMD;                          // MD-chain length
+         int coldHotRatio[2];                     // ratio of hot to cold chains
          
          // GENERAL SYSTEM
          int start;

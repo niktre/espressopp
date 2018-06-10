@@ -88,6 +88,10 @@ namespace espressopp {
          mpi::all_reduce(*getSystem()->comm, _Npart, _totNPart, std::plus<int>());
          setTotNPart(_totNPart);
 
+         /* set default values for cold and hot particles */
+         setColdHotRatio(1, 0);     // all particles are cold
+         setChainLenMD(1);          // default value for chain len. Set in python for real 2-temp simulations 
+
          /* if coupling is present initialise related flags, coefficients and arrays */
          fOnPart = std::vector<Real3D>(_totNPart+1,Real3D(0.));   // +1 as id starts with 1
          if (_totNPart != 0) {
@@ -229,6 +233,9 @@ namespace espressopp {
       
       void LatticeBoltzmann::setChainLenMD (int _chainLenMD) { chainLenMD = _chainLenMD;}
       int LatticeBoltzmann::getChainLenMD () { return chainLenMD;}
+      
+      void LatticeBoltzmann::setColdHotRatio (int _cold, int _hot) { coldHotRatio[0] = _cold; coldHotRatio[1] = _hot;}
+      int LatticeBoltzmann::getColdHotRatio (int _coldorhot) { return coldHotRatio[_coldorhot];}
       
       void LatticeBoltzmann::setDoFluct (bool _fluct) {fluct = _fluct;}
       bool LatticeBoltzmann::doFluct () {return fluct;}
@@ -639,7 +646,10 @@ namespace espressopp {
          real _tempLB;
          
          // assignment of the low and high temperature for 2tlb
-         if ((p.id() / chainLenMD) % 2 == 0)
+         int _coldRatio = getColdHotRatio(0);
+         int _totRatio = _coldRatio + getColdHotRatio(1);
+         
+         if ((p.id() / chainLenMD) % _totRatio < _coldRatio)
              _tempLB = getLBTemp();
          else
              _tempLB = getHighTemp();
@@ -2134,6 +2144,7 @@ namespace espressopp {
          .add_property("lbTemp", &LatticeBoltzmann::getLBTemp, &LatticeBoltzmann::setLBTemp)
          .add_property("highTemp", &LatticeBoltzmann::getHighTemp, &LatticeBoltzmann::setHighTemp)
          .add_property("chainLenMD", &LatticeBoltzmann::getChainLenMD, &LatticeBoltzmann::setChainLenMD)
+         .add_property("coldHotRatio", &LatticeBoltzmann::getColdHotRatio, &LatticeBoltzmann::setColdHotRatio)
          .add_property("fricCoeff", &LatticeBoltzmann::getFricCoeff, &LatticeBoltzmann::setFricCoeff)
          .add_property("nSteps", &LatticeBoltzmann::getNSteps, &LatticeBoltzmann::setNSteps)
          .add_property("profStep", &LatticeBoltzmann::getProfStep, &LatticeBoltzmann::setProfStep)
