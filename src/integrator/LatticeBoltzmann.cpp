@@ -91,6 +91,7 @@ namespace espressopp {
          /* set default values for cold and hot particles */
          setColdHotRatio(1, 0);     // all particles are cold
          setChainLenMD(1);          // default value for chain len. Set in python for real 2-temp simulations 
+         setNumChains(1);           // default value for the number of chains 
 
          /* if coupling is present initialise related flags, coefficients and arrays */
          fOnPart = std::vector<Real3D>(_totNPart+1,Real3D(0.));   // +1 as id starts with 1
@@ -233,6 +234,9 @@ namespace espressopp {
       
       void LatticeBoltzmann::setChainLenMD (int _chainLenMD) { chainLenMD = _chainLenMD;}
       int LatticeBoltzmann::getChainLenMD () { return chainLenMD;}
+      
+      void LatticeBoltzmann::setNumChains (int _numChains) { numChains = _numChains;}
+      int LatticeBoltzmann::getNumChains () { return numChains;}
       
       void LatticeBoltzmann::setColdHotRatio (int _cold, int _hot) { coldHotRatio[0] = _cold; coldHotRatio[1] = _hot;}
       int LatticeBoltzmann::getColdHotRatio (int _coldorhot) { return coldHotRatio[_coldorhot];}
@@ -644,7 +648,8 @@ namespace espressopp {
          real _fricCoeff = getFricCoeff();                  // coupling friction
          real _invdt = 1. / integrator->getTimeStep();      // MD timestep
          real _tempLB;
-         
+         int totFluidAtoms = getNumChains() * getChainLenMD();
+
          // assignment of the low and high temperature for 2tlb
          int _coldRatio = getColdHotRatio(0);
          int _totRatio = _coldRatio + getColdHotRatio(1);
@@ -654,13 +659,17 @@ namespace espressopp {
          else
              _tempLB = getHighTemp();
          
-         // noise amplitude and 3d uniform random number
-         real prefactor = sqrt( 24. * _fricCoeff * _tempLB * _invdt );
-         Real3D ranval( (*rng)() - .5, (*rng)() - .5, (*rng)() - .5 );
-         // noise amplitude and 3d Gaussian random number
-//         real prefactor = sqrt(2. * _fricCoeff * _tempLB / _timestep);
-//         Real3D ranval(rng->normal(), rng->normal(), rng->normal());
-         setFOnPart ( p.id(), prefactor * ranval );
+         if (p.id() < totFluidAtoms) {
+             // noise amplitude and 3d uniform random number
+             real prefactor = sqrt( 24. * _fricCoeff * _tempLB * _invdt );
+             Real3D ranval( (*rng)() - .5, (*rng)() - .5, (*rng)() - .5 );
+             // noise amplitude and 3d Gaussian random number
+   //          real prefactor = sqrt(2. * _fricCoeff * _tempLB / _timestep);
+   //          Real3D ranval(rng->normal(), rng->normal(), rng->normal());
+             setFOnPart ( p.id(), prefactor * ranval );
+         } else {
+             setFOnPart ( p.id(), Real3D(0.) );
+         }
       }
 
 /*******************************************************************************************/
@@ -671,6 +680,7 @@ namespace espressopp {
          real _invA = 1. / _a;
          real _fricCoeff = getFricCoeff();
          Real3D Li = getSystem()->bc->getBoxL();
+         int totFluidAtoms = getNumChains() * getChainLenMD();
 
          // account for particle's positions with respect to CPU's left border
          Real3D _pos = p.position() - getMyLeft();
@@ -716,10 +726,13 @@ namespace espressopp {
          }
 
          // add visc force to the buffered rand force acting onto particle p.id()
+         // need to add this force to the array to apply it onto LB
          addFOnPart(p.id(), -_fricCoeff * (p.velocity() - interpVel));
 
-         // apply buffered force to the MD-particle p.id()
-         p.force() += getFOnPart(p.id());
+         if (p.id() < totFluidAtoms) { // do not need to apply the force on substrate
+             // apply buffered force to the MD-particle p.id()
+             p.force() += getFOnPart(p.id());
+         }
 
          // convert coupl force (LJ units) to mom change on a lattice (LB units)
          Real3D deltaJLoc = Real3D(0.);
@@ -2144,11 +2157,12 @@ namespace espressopp {
          .add_property("lbTemp", &LatticeBoltzmann::getLBTemp, &LatticeBoltzmann::setLBTemp)
          .add_property("highTemp", &LatticeBoltzmann::getHighTemp, &LatticeBoltzmann::setHighTemp)
          .add_property("chainLenMD", &LatticeBoltzmann::getChainLenMD, &LatticeBoltzmann::setChainLenMD)
-         .add_property("coldHotRatio", &LatticeBoltzmann::getColdHotRatio, &LatticeBoltzmann::setColdHotRatio)
+         .add_property("numChains", &LatticeBoltzmann::getNumChains, &LatticeBoltzmann::setNumChains)
          .add_property("fricCoeff", &LatticeBoltzmann::getFricCoeff, &LatticeBoltzmann::setFricCoeff)
          .add_property("nSteps", &LatticeBoltzmann::getNSteps, &LatticeBoltzmann::setNSteps)
          .add_property("profStep", &LatticeBoltzmann::getProfStep, &LatticeBoltzmann::setProfStep)
          .add_property("getMyNi", &LatticeBoltzmann::getMyNi)
+         .def("setColdHotRatio", &LatticeBoltzmann::setColdHotRatio)
          .def("getLBMom", &LatticeBoltzmann::getLBMom)
          .def("setLBMom", &LatticeBoltzmann::setLBMom)
          .def("saveLBConf", &LatticeBoltzmann::saveLBConf)

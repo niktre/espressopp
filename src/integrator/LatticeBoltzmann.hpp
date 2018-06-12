@@ -138,9 +138,11 @@ namespace espressopp {
          void setHighTemp (real _highTemp);            // high temperature (lj)
          real getHighTemp ();
  
-         
          void setChainLenMD (int _chainLenMD);                // get length of a chain
          int getChainLenMD ();
+         
+         void setNumChains (int _numChains);                // get number of chains
+         int getNumChains ();
          
          void setColdHotRatio (int _cold, int _hot);      // two numbers for ratio of hot and cold chain
          int getColdHotRatio (int _coldorhot);
@@ -277,6 +279,7 @@ namespace espressopp {
          // JAN 2TLB / ACTIVE DROPLETS
          real highTemp;                           // lb temperature (LJ-units)
          int chainLenMD;                          // MD-chain length
+         int numChains;                          // number of MD-chains
          int coldHotRatio[2];                     // ratio of hot to cold chains
          
          // GENERAL SYSTEM
