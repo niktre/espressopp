@@ -236,6 +236,9 @@ namespace espressopp {
          void calcDenMom ();
          real convMDtoLB (int _opCode);
 
+         /* FIXING SUBSTRATE ATOMS */
+         void fixSubstrate();                      // fix substrate atoms
+
          void collideStream ();                    // use collide-stream scheme
 
          void streaming (int _i, int _j, int _k); // streaming along velocities
@@ -317,6 +320,7 @@ namespace espressopp {
          // SIGNALS
          boost::signals2::connection _befIntV;
          boost::signals2::connection _recalc2;
+         boost::signals2::connection _befIntP;
 
          // TIMERS
          esutil::WallTimer swapping, colstream, comm;

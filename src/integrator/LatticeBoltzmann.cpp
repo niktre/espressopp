@@ -142,6 +142,7 @@ namespace espressopp {
       void LatticeBoltzmann::connect() {
          _recalc2 = integrator->recalc2.connect ( boost::bind(&LatticeBoltzmann::zeroMDCMVel, this));
          _befIntV = integrator->befIntV.connect ( boost::bind(&LatticeBoltzmann::makeLBStep, this));
+         _befIntP = integrator->befIntP.connect ( boost::bind(&LatticeBoltzmann::fixSubstrate, this));
       }
 
 /*******************************************************************************************/
@@ -805,6 +806,20 @@ namespace espressopp {
       }
 
 /*******************************************************************************************/
+      void LatticeBoltzmann::fixSubstrate () {
+         int _totFluidPart = getNumChains() * getChainLenMD();
+        
+         System& system = getSystemRef();
+         CellList realCells = system.storage->getRealCells();
+ 
+         for(CellListIterator cit(realCells); !cit.isDone(); ++cit) {
+            if (cit->id() < _totFluidPart) {
+               cit->velocity() = Real3D (0.);
+               cit->force() = Real3D (0.);
+            }
+         }
+      }
+
 
       /* SET CM VELOCITY OF THE MD TO ZERO AT THE START OF COUPLING */
       void LatticeBoltzmann::zeroMDCMVel () {
