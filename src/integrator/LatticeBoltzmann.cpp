@@ -91,7 +91,7 @@ namespace espressopp {
          /* set default values for cold and hot particles */
          setColdHotRatio(1, 0);     // all particles are cold
          setChainLenMD(1);          // default value for chain len. Set in python for real 2-temp simulations 
-         setNumChains(1);           // default value for the number of chains 
+         setNumChains(_totNPart);           // default value for the number of chains 
 
          /* if coupling is present initialise related flags, coefficients and arrays */
          fOnPart = std::vector<Real3D>(_totNPart+1,Real3D(0.));   // +1 as id starts with 1
@@ -649,18 +649,19 @@ namespace espressopp {
          real _fricCoeff = getFricCoeff();                  // coupling friction
          real _invdt = 1. / integrator->getTimeStep();      // MD timestep
          real _tempLB;
+         int _chainLenMD = getChainLenMD();
          int totFluidAtoms = getNumChains() * getChainLenMD();
 
          // assignment of the low and high temperature for 2tlb
          int _coldRatio = getColdHotRatio(0);
          int _totRatio = _coldRatio + getColdHotRatio(1);
          
-         if ((p.id() / chainLenMD) % _totRatio < _coldRatio)
+         if ((p.id() / _chainLenMD) % _totRatio < _coldRatio)
              _tempLB = getLBTemp();
          else
              _tempLB = getHighTemp();
          
-         if (p.id() < totFluidAtoms) {
+         if (p.id() <= totFluidAtoms) {
              // noise amplitude and 3d uniform random number
              real prefactor = sqrt( 24. * _fricCoeff * _tempLB * _invdt );
              Real3D ranval( (*rng)() - .5, (*rng)() - .5, (*rng)() - .5 );
@@ -730,7 +731,7 @@ namespace espressopp {
          // need to add this force to the array to apply it onto LB
          addFOnPart(p.id(), -_fricCoeff * (p.velocity() - interpVel));
 
-         if (p.id() < totFluidAtoms) { // do not need to apply the force on substrate
+         if (p.id() <= totFluidAtoms) { // do not need to apply the force on substrate
              // apply buffered force to the MD-particle p.id()
              p.force() += getFOnPart(p.id());
          }
@@ -813,7 +814,7 @@ namespace espressopp {
          CellList realCells = system.storage->getRealCells();
  
          for(CellListIterator cit(realCells); !cit.isDone(); ++cit) {
-            if (cit->id() >= _totFluidPart) {
+            if (cit->id() > _totFluidPart) {
                cit->velocity() = Real3D (0.);
                cit->force() = Real3D (0.);
             }
