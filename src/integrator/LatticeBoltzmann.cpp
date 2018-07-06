@@ -813,13 +813,12 @@ namespace espressopp {
          CellList realCells = system.storage->getRealCells();
  
          for(CellListIterator cit(realCells); !cit.isDone(); ++cit) {
-            if (cit->id() < _totFluidPart) {
+            if (cit->id() >= _totFluidPart) {
                cit->velocity() = Real3D (0.);
                cit->force() = Real3D (0.);
             }
          }
       }
-
 
       /* SET CM VELOCITY OF THE MD TO ZERO AT THE START OF COUPLING */
       void LatticeBoltzmann::zeroMDCMVel () {
