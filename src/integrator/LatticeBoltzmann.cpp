@@ -661,7 +661,7 @@ namespace espressopp {
          else
              _tempLB = getHighTemp();
          
-         if (p.id() <= totFluidAtoms) {
+         if (p.id() < totFluidAtoms) {
              // noise amplitude and 3d uniform random number
              real prefactor = sqrt( 24. * _fricCoeff * _tempLB * _invdt );
              Real3D ranval( (*rng)() - .5, (*rng)() - .5, (*rng)() - .5 );
@@ -731,7 +731,7 @@ namespace espressopp {
          // need to add this force to the array to apply it onto LB
          addFOnPart(p.id(), -_fricCoeff * (p.velocity() - interpVel));
 
-         if (p.id() <= totFluidAtoms) { // do not need to apply the force on substrate
+         if (p.id() < totFluidAtoms) { // do not need to apply the force on substrate
              // apply buffered force to the MD-particle p.id()
              p.force() += getFOnPart(p.id());
          }
@@ -814,7 +814,7 @@ namespace espressopp {
          CellList realCells = system.storage->getRealCells();
  
          for(CellListIterator cit(realCells); !cit.isDone(); ++cit) {
-            if (cit->id() > _totFluidPart) {
+            if (cit->id() >= _totFluidPart) {
                cit->velocity() = Real3D (0.);
                cit->force() = Real3D (0.);
             }
