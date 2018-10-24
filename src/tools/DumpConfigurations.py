@@ -226,7 +226,7 @@ def readxyzr(filename):
   file.close()
 
 #my modified writexyz with velocities and type by pid
-def myfastwritexyz(filename, system, velocities = True, unfolded = True, append = False, mpc=1):
+def myfastwritexyz(filename, system, velocities = True, unfolded = True, append = False, nc=1, mpc=1, c_share=1, h_share=0):
 
   if append:
     file = open(filename,'a')
@@ -250,19 +250,34 @@ def myfastwritexyz(filename, system, velocities = True, unfolded = True, append 
   st = "%d\n%15.10f %15.10f %15.10f\n" % (numParticles, box_x, box_y, box_z)
   file.write(st)
 
+  # calculate num of fluid particles
+  num_fluid_part = nc * mpc
+
+  # set cold-to-hot ratio
+  tot_share = c_share + h_share
+
   for pid in configuration:
-        xpos   = configuration[pid][0]
-        ypos   = configuration[pid][1]
-        zpos   = configuration[pid][2]
-        if velocities:
-          xvel   = velocity[pid][0]
-          yvel   = velocity[pid][1]
-          zvel   = velocity[pid][2]
-          st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, (pid/mpc) %2 ,xpos, ypos, zpos, xvel, yvel, zvel)
-        else:
-          st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, (pid/mpc) %2, xpos, ypos, zpos)
-        file.write(st)
-        #pid   += 1
+    xpos   = configuration[pid][0]
+    ypos   = configuration[pid][1]
+    zpos   = configuration[pid][2]
+
+    # cold or hot particle?
+    if (pid / mpc) % tot_share < c_share:
+      pType = 0 # cold
+    else: 
+      pType = 1 # hot
+    # correct type if it is the substrate 
+    if (pid >= num_fluid_part):
+      pType = 2
+
+    if velocities:
+      xvel   = velocity[pid][0]
+      yvel   = velocity[pid][1]
+      zvel   = velocity[pid][2]
+      st = "%d %d %15.10f %15.10f %15.10f %15.10f %15.10f %15.10f\n"%(pid, pType, xpos, ypos, zpos, xvel, yvel, zvel)
+    else:
+      st = "%d %d %15.10f %15.10f %15.10f\n"%(pid, pType, xpos, ypos, zpos)
+    file.write(st)
 
   file.close()
 
