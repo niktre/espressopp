@@ -60,7 +60,6 @@
 #include "AngularUniquePotential.hpp"
 #include "Cosine.hpp"
 #include "AngularHarmonic.hpp"
-#include "AngularUniqueHarmonic.hpp"
 #include "AngularCosineSquared.hpp"
 
 #include "DihedralPotential.hpp"
