@@ -57,7 +57,6 @@
 #include "TabulatedSubEnsAngular.hpp"
 
 #include "AngularPotential.hpp"
-#include "AngularUniquePotential.hpp"
 #include "Cosine.hpp"
 #include "AngularHarmonic.hpp"
 #include "AngularCosineSquared.hpp"
