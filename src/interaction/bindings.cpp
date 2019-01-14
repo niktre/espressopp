@@ -62,7 +62,6 @@
 #include "AngularHarmonic.hpp"
 #include "AngularUniqueHarmonic.hpp"
 #include "AngularCosineSquared.hpp"
-#include "AngularUniqueCosineSquared.hpp"
 
 #include "DihedralPotential.hpp"
 #include "DihedralUniquePotential.hpp"
