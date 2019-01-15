@@ -66,7 +66,6 @@
 #include "TabulatedSubEnsDihedral.hpp"
 #include "OPLS.hpp"
 #include "DihedralHarmonicCos.hpp"
-#include "DihedralHarmonicUniqueCos.hpp"
 #include "DihedralHarmonicNCos.hpp"
 #include "DihedralHarmonic.hpp"
 #include "DihedralRB.hpp"
